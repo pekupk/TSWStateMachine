@@ -1,6 +1,6 @@
+
 //
 //  t0swStateMachine.swift
-//  GPKitTest
 //
 //  Created by Tmi Parabits on 21/05/2018.
 //  Copyright © 2018 Thousand Software. All rights reserved.
@@ -9,7 +9,7 @@
 //
 // GameplayKit GKState and GKStateMachine class clones, e.g., for WatchKit
 //
-// Implements update, isValidNextState, didEnter, update, enter and init
+// Implements update, isValidNextState, willExit, didEnter, update, enter and init
 // with states array for state machine.
 //
 
@@ -49,6 +49,13 @@ class TSWState:TSWStateNone {
         //
     }
     
+    func willExit(to nextState: TSWState) {
+        
+        //
+        // override in subclass
+        //
+    }
+    
     override func isValidNextState(_ state: AnyClass ) -> Bool {
         
         //
@@ -62,9 +69,9 @@ class TSWState:TSWStateNone {
 
 class TSWStateMachine {
     
-    var states:[TSWState]
+    private var states:[TSWState]
+    private var currentState:Int
     
-    var currentState:Int
     
     init(states array:[TSWState]) {
         
@@ -74,17 +81,24 @@ class TSWStateMachine {
         for (_ , st) in self.states.enumerated() {
             st.stateMachine=self
         }
+    }
+    
+    public func canEnterState(_ stateType:TSWState.Type) -> Bool {
+        
+        return self.getCurrentState().isValidNextState(stateType)
         
     }
     
-    func update(deltaTime seconds: TimeInterval) {
+    
+    
+    public func update(deltaTime seconds: TimeInterval) {
         
         self.getCurrentState().update(deltaTime: seconds)
         
     }
     
     
-    func getCurrentState() -> TSWStateNone {
+    public func getCurrentState() -> TSWStateNone {
         
         if (currentState == -1) {
             return TSWStateNone()
@@ -94,7 +108,7 @@ class TSWStateMachine {
         
     }
     
-    func enter(_ stateType:TSWState.Type) {
+    public func enter(_ stateType:TSWState.Type) {
         
         if let currentState=self.getCurrentState() as? TSWState {
         
@@ -102,14 +116,18 @@ class TSWStateMachine {
                 
                 let previousState=currentState
                 
+                
                 for (index, st) in self.states.enumerated() {
                     
                     
                     if (type(of: st) == stateType) {
                         
-                        st.didEnter(from: previousState)
+                        currentState.willExit(to: st)
                         
                         self.currentState = index
+                        
+                        st.didEnter(from: previousState)
+                        
                         return
                         
                     } 
